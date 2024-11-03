@@ -1,32 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="utf-8" />
-    <title>METANIT.COM</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Recognition Client</title>
 </head>
 <body>
-<button id="startBtn">Start</button>
-<script>
-const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new speechRecognition();
-recognition.onresult = function(event){ 
-    const results = event.results;  //   получаем список результатов
-    const firstResult = results[0]; // получаем распознанный результат
-    const firstAlternative = firstResult[0];    // получаем первый вариант распознавания
-    const transcript = firstAlternative.transcript;  //  распознанный текст
-    alert(transcript);
-    recognition.stop();
-}
-// по нажатию на кнопку Start запускаем распознавание
-document.getElementById("startBtn").addEventListener("click", ()=>{
-    if(speechRecognition) {
-        recognition.continuous = true;
-        recognition.lang = "ru";    // распознавание речи на русском языке
-        recognition.start();    // начинаем распознавание
-    } else {
-        console.log("Распознавание речи НЕ поддерживается");
-    }
-});
-</script>
+    <h1>Распознавание речи</h1>
+    <button id="startBtn">Начать запись</button>
+    <button id="stopBtn" disabled>Остановить запись</button>
+    <p>Транскрипция: <span id="transcript">Здесь появится текст</span></p>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        document.getElementById("startBtn").addEventListener("click", async () => {
+            // Запрашиваем доступ к микрофону
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            
+            // Включаем кнопку "Остановить запись"
+            document.getElementById("stopBtn").disabled = false;
+            document.getElementById("startBtn").disabled = true;
+
+            // Записываем данные при получении
+            mediaRecorder.addEventListener("dataavailable", event => {
+                audioChunks.push(event.data);
+            });
+
+            // Запускаем запись
+            mediaRecorder.start();
+            console.log("Запись начата...");
+        });
+
+        document.getElementById("stopBtn").addEventListener("click", () => {
+            // Останавливаем запись
+            mediaRecorder.stop();
+            document.getElementById("stopBtn").disabled = true;
+            document.getElementById("startBtn").disabled = false;
+            console.log("Запись остановлена...");
+
+            mediaRecorder.addEventListener("stop", async () => {
+                // Создаем аудиофайл из записанных данных
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const formData = new FormData();
+                formData.append("file", audioBlob, "recording.wav");
+
+                // Отправляем аудиофайл на сервер
+                try {
+                    const response = await fetch("http://127.0.0.1:8000/transcribe-audio/", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    // Обрабатываем ответ сервера
+                    if (response.ok) {
+                        const result = await response.json();
+                        document.getElementById("transcript").textContent = result.transcript;
+                        console.log("Транскрипция:", result.transcript);
+                    } else {
+                        document.getElementById("transcript").textContent = "Ошибка при распознавании";
+                        console.error("Ошибка сервера:", response.statusText);
+                    }
+                } catch (error) {
+                    document.getElementById("transcript").textContent = "Ошибка сети";
+                    console.error("Ошибка сети:", error);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
