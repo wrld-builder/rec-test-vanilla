@@ -9,20 +9,17 @@
 <script>
 const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new speechRecognition();
-let index = 0;
 recognition.onresult = function(event){ 
-    recognition.stop();
-
     const results = event.results;  //   получаем список результатов
-    const firstResult = results[index++]; // получаем распознанный результат
+    const firstResult = results[0]; // получаем распознанный результат
     const firstAlternative = firstResult[0];    // получаем первый вариант распознавания
     const transcript = firstAlternative.transcript;  //  распознанный текст
-    recognition.stop();
     alert(transcript);
+    recognition.stop();
 }
 // по нажатию на кнопку Start запускаем распознавание
 document.getElementById("startBtn").addEventListener("click", ()=>{
-    if(window.webkitSpeechRecognition) {
+    if(speechRecognition) {
         recognition.continuous = true;
         recognition.lang = "ru";    // распознавание речи на русском языке
         recognition.start();    // начинаем распознавание
