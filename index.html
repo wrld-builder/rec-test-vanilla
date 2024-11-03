@@ -6,18 +6,19 @@
 </head>
 <body>
 <button id="startBtn">Start</button>
-<button id="stopBtn">Stop</button>
 <script>
 const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new speechRecognition();
 let index = 0;
 recognition.onresult = function(event){ 
+    recognition.stop();
+
     const results = event.results;  //   получаем список результатов
     const firstResult = results[index++]; // получаем распознанный результат
     const firstAlternative = firstResult[0];    // получаем первый вариант распознавания
     const transcript = firstAlternative.transcript;  //  распознанный текст
-    const confidence = firstAlternative.confidence;    // уровень уверенности 
-    alert(transcript);  
+    recognition.stop();
+    alert(transcript);
 }
 // по нажатию на кнопку Start запускаем распознавание
 document.getElementById("startBtn").addEventListener("click", ()=>{
@@ -29,8 +30,6 @@ document.getElementById("startBtn").addEventListener("click", ()=>{
         console.log("Распознавание речи НЕ поддерживается");
     }
 });
-// по нажатию на кнопку Stop останавливаем распознавание
-document.getElementById("stopBtn").addEventListener("click", ()=>{recognition.stop(); index=0;})
 </script>
 </body>
 </html>
